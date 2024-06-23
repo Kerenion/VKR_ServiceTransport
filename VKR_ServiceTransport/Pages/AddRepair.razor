@@ -1,0 +1,298 @@
+﻿@page "/addRepair"
+
+@using Microsoft.EntityFrameworkCore
+@using VKR_ServiceTransport.Domain.Entities
+@using VKR_ServiceTransport.Ef.Persistance
+@using VKR_ServiceTransport.Data
+
+@inject IDbContextFactory<VKR_ServiceTransportContext> ContextFactory
+@inject NavigationManager Navigation
+@inject TransportService transportService
+
+<PageTitle>Добавление ТО</PageTitle>
+
+<style>
+
+    .text-field__input {
+        display: block;
+        width: 100%;
+        height: 30px;
+        padding: 0.175rem 0.75rem;
+        font-family: inherit;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #bdbdbd;
+        border-radius: 0.25rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+        .text-field__input::placeholder {
+            color: #212529;
+            opacity: 0.4;
+        }
+
+        .text-field__input:focus {
+            color: #212529;
+            background-color: #fff;
+            border-color: #bdbdbd;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(158, 158, 158, 0.25);
+        }
+
+</style>
+
+<style>
+
+    .input-repair {
+        display:grid;
+    }
+
+    input {
+        margin: 5px 0px 20px;
+
+    }
+
+    select{
+        margin: 5px 5px 20px 0px;
+    }
+
+    .WhatWasDone{
+        display:flex;
+    }
+
+
+</style>
+
+<b>Добавление ТО</b>
+
+<div class="input-repair">
+
+    <div>Что было сделано</div>
+    <div class="WhatWasDone">
+        
+        <select class="text-field__input" @onchange="OnSelectChange">
+
+            @foreach(var interval in transport.SparePartsIntervals)
+            {
+                <option value="@interval.Name">@interval.Name</option>
+            }
+
+            <option value="@spareParts.Name">Другое</option>
+
+        </select>
+
+        <input class="text-field__input" type="text" @bind="WhatWasDone" placeholder="Что было сделано" required>
+
+    </div>
+
+    <div>Пробег, кодга было сделано</div>
+    <input class="text-field__input" type="text" @bind="CurrentMileage" placeholder="Пробег, кодга было сделано" required>
+
+    <div>Дата</div>
+    <input class="text-field__input" type="text" @bind="Date" placeholder="Дата" required>
+
+    <div>Пробег, через сколько менять</div>
+    <input class="text-field__input" type="text" @bind="ReplacementMileage" placeholder="Пробег, через сколько менять" required>
+
+    <div>Дата, через сколько менять (в месяцах)</div>
+    <input class="text-field__input" type="text" @bind="ReplacementDate" placeholder="Дата, через сколько менять в месяцах" required>
+
+    <div>Стоимость запчасти</div>
+    <input class="text-field__input" type="text" @bind="CostSparePart" placeholder="Стоимость запчасти" required>
+
+    <div>Стоимость работы</div>
+    <input class="text-field__input" type="text" @bind="CostWork" placeholder="Стоимость работы" required>
+
+    <div>Артикулы деталей</div>
+    <input class="text-field__input" type="text" @bind="PartNumbers" placeholder="Артикулы деталей" required>
+
+    <div>Комментарий</div>
+    <input class="text-field__input" type="text" @bind="Comment" placeholder="Комментарий" required>
+
+</div>
+
+<button class="btn btn-primary" @onclick="buttonClick">Добавить</button>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger mt-3" role="alert">@errorMessage</div>
+}
+
+@code {
+    string WhatWasDone;
+    int CurrentMileage;
+    DateOnly Date;
+
+    string selectInterval;
+    SparePartsIntervals selectedInterval;
+    SparePartsIntervals spareParts;
+
+    int ReplacementMileage;
+    int ReplacementDate;
+
+    decimal CostSparePart;
+    decimal CostWork;
+
+    int PartNumbers;
+    string Comment;
+
+    Transport transport;
+    Repair repair;
+    Notice notice;
+
+    private string errorMessage;
+
+    List<SparePartsIntervals> sparePartsIntervals;
+
+    private void OnSelectChange(ChangeEventArgs e)
+    {
+        selectInterval = e.Value.ToString();
+
+        ReplacementMileage = 0;
+        ReplacementDate = 0;
+
+        if (selectInterval != "Другое")
+        {
+            selectedInterval = sparePartsIntervals.FirstOrDefault(i => i.Name == selectInterval);
+        }
+        else
+        {
+            WhatWasDone = "";
+            ReplacementMileage = 0;
+            ReplacementDate = 0;
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(selectedInterval.IntervalByMileage))
+        {
+            WhatWasDone = selectedInterval.Name;
+            ReplacementMileage = Convert.ToInt32(selectedInterval.IntervalByMileage);
+        }
+
+        if (!string.IsNullOrEmpty(selectedInterval.IntervalByDate))
+        {
+            WhatWasDone = selectedInterval.Name;
+            ReplacementDate = Convert.ToInt32(selectedInterval.IntervalByDate);
+        }
+    }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await using var context = ContextFactory.CreateDbContext();
+        spareParts = new SparePartsIntervals
+            {
+                IntervalByDate = "0",
+                IntervalByMileage = "0",
+                Name = "Другое"
+            };
+
+        transport = transportService.currentTransport;
+
+        sparePartsIntervals = transport.SparePartsIntervals;
+
+        Date = DateOnly.FromDateTime(DateTime.Now);
+        CurrentMileage = transport.Mileage;
+        Comment = "-";
+    }
+
+    public bool DataChecking()
+    {
+        if (string.IsNullOrWhiteSpace(WhatWasDone))
+        {
+            errorMessage = "Поле \"Что было сделано\" не должен быть пустым";
+            return true;
+        }
+
+        if (CurrentMileage < 0 || CurrentMileage != transport.Mileage)
+        {
+            errorMessage = "Пробег должен быть неотрицательным и актуальным";
+            return true;
+        }
+
+        if (CostSparePart < 0 || CostWork < 0)
+        {
+            errorMessage = "Стоимость запчасти и Стоимость работы должны быть неотрицательными";
+            return true;
+        }
+
+        if (ReplacementMileage <= 0 && ReplacementDate <= 0)
+        {
+            errorMessage = "Поле \"Пробег, через сколько менять\" должен быть больше 0";
+            return true;
+        }
+
+        if (Date != DateOnly.FromDateTime(DateTime.Now))
+        {
+            errorMessage = "Дата должна быть сегодняшняя";
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(Comment))
+        {
+            errorMessage = "Добавте комментарий";
+            return true;
+        }
+
+        return false;
+    }
+
+    public void buttonClick()
+    {
+        using var context = ContextFactory.CreateDbContext();
+
+        if (DataChecking())
+            return;
+
+        repair = new Repair
+            {
+                WhatWasDone = WhatWasDone,
+                CurrentMileage = CurrentMileage,
+                Date = Date,
+                CostSparePart = CostSparePart,
+                CostWork = CostWork,
+                CostTotal = CostSparePart + CostWork,
+                PartNumbers = PartNumbers,
+                Comment = Comment
+            };
+
+        // sparePartsInterval.Count != 0 ? (transport.Mileage + Convert.ToInt32(sparePartsInterval[0].IntervalByMileage)) : transport.Mileage + 15000
+
+
+        if (ReplacementMileage == 0)
+        {
+            notice = new Notice
+                {
+                    Text = WhatWasDone,
+                    Date = Date,
+                    MileageNotify = ReplacementMileage,
+                    DateNotify = DateOnly.FromDateTime(DateTime.Today).AddMonths(ReplacementDate),
+                    Comment = "-"
+                };
+        }
+        else
+        {
+            notice = new Notice
+                {
+                    Text = WhatWasDone,
+                    Date = Date,
+                    MileageNotify = CurrentMileage + ReplacementMileage,
+                    DateNotify = DateOnly.FromDateTime(DateTime.Today).AddMonths(ReplacementDate),
+                    Comment = "-"
+                };
+        }
+
+
+        transport.Repairs.Add(repair);
+        transport.Notices.Add(notice);
+
+        context.Repairs.Add(repair);
+        context.Transports.Update(transport);
+
+        context.SaveChanges();
+        Navigation.NavigateTo("/counter", true);
+    }
+}

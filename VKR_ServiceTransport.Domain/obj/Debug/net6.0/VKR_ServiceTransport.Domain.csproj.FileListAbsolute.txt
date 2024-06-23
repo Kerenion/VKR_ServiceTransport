@@ -1,0 +1,14 @@
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\bin\Debug\net6.0\VKR_ServiceTransport.Domain.deps.json
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\bin\Debug\net6.0\VKR_ServiceTransport.Domain.dll
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\bin\Debug\net6.0\VKR_ServiceTransport.Domain.pdb
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\VKR_ServiceTransport.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\VKR_ServiceTransport.Domain.AssemblyInfoInputs.cache
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\VKR_ServiceTransport.Domain.AssemblyInfo.cs
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\VKR_ServiceTransport.Domain.csproj.CoreCompileInputs.cache
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\VKR_ServiceTransport.Domain.dll
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\refint\VKR_ServiceTransport.Domain.dll
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\VKR_ServiceTransport.Domain.pdb
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\ref\VKR_ServiceTransport.Domain.dll
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\bin\Debug\net6.0\VKR_ServiceTransport.Domain.runtimeconfig.json
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\VKR_ServiceTransport.Domain.csproj.AssemblyReference.cache
+C:\Users\Lenovo\source\repos\VKR_ServiceTransport.Domain\obj\Debug\net6.0\VKR_ServiceTransport.Domain.genruntimeconfig.cache

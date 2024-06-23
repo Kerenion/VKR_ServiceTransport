@@ -1,0 +1,269 @@
+﻿@page "/thisTransport"
+
+@using Microsoft.EntityFrameworkCore
+@using VKR_ServiceTransport.Domain.Entities
+@using VKR_ServiceTransport.Ef.Persistance
+@using VKR_ServiceTransport.Data
+@using System.Text.RegularExpressions;
+
+@inject IDbContextFactory<VKR_ServiceTransportContext> ContextFactory
+@inject NavigationManager Navigation
+@inject TransportService transportService
+
+<PageTitle>Изменение данного ТС</PageTitle>
+
+<style>
+
+    .text-field__input {
+        display: block;
+        width: 50%;
+        height: 30px;
+        padding: 0.175rem 0.75rem;
+        font-family: inherit;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #bdbdbd;
+        border-radius: 0.25rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+        .text-field__input::placeholder {
+            color: #212529;
+            opacity: 0.4;
+        }
+
+        .text-field__input:focus {
+            color: #212529;
+            background-color: #fff;
+            border-color: #bdbdbd;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(158, 158, 158, 0.25);
+        }
+
+</style>
+
+<style>
+
+    .input-transport{
+        display:grid;
+    }
+
+    input{
+        margin: 5px 0px 20px;
+    }
+
+    .interval {
+        margin-top: 20px;
+    }
+
+    select{
+        margin: 5px 0px 20px;
+    }
+
+</style>
+
+<b>Изменение ТС</b>
+
+<div class="input-transport">
+
+    <div>Марка</div>
+    <input class="text-field__input" type="text" @bind="Brand" placeholder="Марка" required>
+
+    <div>Модель</div>
+    <input class="text-field__input" type="text" @bind="Model" placeholder="Модель" required>
+
+    <div>Гос. номер (Пример: АА1111, А111АА, 1111АА, АА111А  Используйте буквы русского алфавита)</div>
+    <input class="text-field__input" type="text" @bind="StateNumber" placeholder="Гос. номер" required>
+
+    <div>Пробег</div>
+    <input class="text-field__input" type="text" @bind="Mileage" placeholder="Пробег" required>
+
+    <div>VIN</div>
+    <input class="text-field__input" type="text" @bind="VIN" placeholder="VIN" required>
+
+</div>
+
+<div>
+    <div class="interval">Интервалы замены</div>
+    <select class="text-field__input" @onchange="OnSelectChange">
+
+        @foreach (var interval in transport.SparePartsIntervals)
+        {
+            <option value="@interval.Name">@interval.Name</option>
+        }
+        
+    </select>
+
+    <div>По пробегу</div>
+    <input class="text-field__input" type="text" @bind="PoMiliage" @onblur="SaveMiliage" placeholder="По пробегу" required>
+
+    <div>По дате (месяц)</div>
+    <input class="text-field__input" type="text" @bind="PoDate" @onblur="SaveDate" placeholder="По дате (месяц)" required>
+
+</div>
+
+<button class="btn btn-primary" @onclick="buttonClick">Сохранить</button>
+<button class="btn btn-danger" @onclick="DeleteTransport">Удалить</button>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger mt-3" role="alert">@errorMessage</div>
+}
+
+@code {
+    Transport transport;
+
+    string selectInterval;
+
+    SparePartsIntervals selectedInterval;
+
+    string Brand;
+    string Model;
+    string StateNumber;
+    int Mileage;
+    int VIN;
+
+    string PoMiliage;
+    string PoDate;
+
+    private string errorMessage;
+    string patternStateNumber = @"^(А|а|В|в|Е|е|К|к|М|м|Н|н|О|о|Р|р|С|с|Т|т|У|у|Х|х){2}\d{4}$";
+    string patternStateNumber_2 = @"^(А|а|В|в|Е|е|К|к|М|м|Н|н|О|о|Р|р|С|с|Т|т|У|у|Х|х){1}\d{3}(А|а|В|в|Е|е|К|к|М|м|Н|н|О|о|Р|р|С|с|Т|т|У|у|Х|х){2}$";
+    string patternStateNumber_3 = @"^\d{4}(А|а|В|в|Е|е|К|к|М|м|Н|н|О|о|Р|р|С|с|Т|т|У|у|Х|х){2}$";
+    string patternStateNumber_4 = @"^(А|а|В|в|Е|е|К|к|М|м|Н|н|О|о|Р|р|С|с|Т|т|У|у|Х|х){2}\d{3}(А|а|В|в|Е|е|К|к|М|м|Н|н|О|о|Р|р|С|с|Т|т|У|у|Х|х){1}$";
+
+    List<SparePartsIntervals> sparePartsIntervals;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await using var context = ContextFactory.CreateDbContext();
+
+        transport = transportService.transport;
+
+        Brand = transport.Brand;
+        Model = transport.Model;
+        StateNumber = transport.StateNumber;
+        Mileage = transport.Mileage;
+        VIN = transport.VIN;
+        sparePartsIntervals = transport.SparePartsIntervals;
+    }
+
+    private void OnSelectChange(ChangeEventArgs e)
+    {
+        selectInterval = e.Value.ToString();
+        selectedInterval = sparePartsIntervals.FirstOrDefault(i => i.Name == selectInterval);
+        if (selectedInterval != null)
+        {
+            PoMiliage = selectedInterval.IntervalByMileage;
+            PoDate = selectedInterval.IntervalByDate;
+        }
+    }
+
+    private async Task SaveMiliage()
+    {
+        if (selectedInterval != null)
+        {
+            selectedInterval.IntervalByMileage = PoMiliage;
+            await UpdateDatabase();
+        }
+    }
+
+    private async Task SaveDate()
+    {
+        if (selectedInterval != null)
+        {
+            selectedInterval.IntervalByDate = PoDate;
+            await UpdateDatabase();
+        }
+    }
+
+    private async Task UpdateDatabase()
+    {
+        try
+        {
+            await using var context = ContextFactory.CreateDbContext();
+            context.SparePartsIntervals.Update(selectedInterval);
+            await context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ошибка при обновлении базы данных: {ex.Message}";
+        }
+    }
+
+    public bool DataChecking()
+    {
+        if (!Regex.IsMatch(StateNumber, patternStateNumber) &&
+            !Regex.IsMatch(StateNumber, patternStateNumber_2) &&
+            !Regex.IsMatch(StateNumber, patternStateNumber_3) &&
+            !Regex.IsMatch(StateNumber, patternStateNumber_4))
+        {
+            errorMessage = "Некорректные Гос. номера";
+            return true;
+        }
+
+        if (string.IsNullOrEmpty(Brand) ||
+            string.IsNullOrEmpty(Model) ||
+            string.IsNullOrEmpty(StateNumber) ||
+            VIN == 0)
+        {
+            errorMessage = "Все поля должны быть заполнены";
+            return true;
+        }
+
+        if (Mileage != transport.Mileage || Mileage < 0)
+        {
+            errorMessage = "Пробег должен быть неотрицательным и актуальным";
+            return true;
+        }
+
+        return false;
+    }
+
+    public async void buttonClick()
+    {
+        if (DataChecking())
+            return;
+
+        await using var context = ContextFactory.CreateDbContext();
+
+        transport.Brand = Brand;
+        transport.Model = Model;
+        transport.StateNumber = StateNumber.ToUpper();
+        transport.Mileage = Mileage;
+        transport.VIN = VIN;
+
+        context.Transports.Update(transport);
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/", true);
+    }
+
+    public async void DeleteTransport()
+    {
+        await using var context = ContextFactory.CreateDbContext();
+
+        if (transport.Repairs.Count != 0)
+        {
+            context.Repairs.RemoveRange(transport.Repairs);
+        }
+        
+        if (transport.Notices.Count != 0)
+        {
+            context.Notices.RemoveRange(transport.Notices);
+        }
+        
+        context.SparePartsIntervals.RemoveRange(transport.SparePartsIntervals);
+
+        context.Transports.Remove(transport);
+        transportService.transport = null;
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/", true);
+    }
+}
